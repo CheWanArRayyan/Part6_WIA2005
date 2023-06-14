@@ -1,7 +1,6 @@
 def find_trolley_items(items, capacity):
     n = len(items)
-    dp = [0] * (capacity + 1)
-    chosen = [[] for _ in range(capacity + 1)]
+    memo = {}
 
     item_names = {
         12: "Sack of Corn",
@@ -10,16 +9,45 @@ def find_trolley_items(items, capacity):
         4: "Tyre"
     }
 
-    for i in range(n):
-        weight = items[i]
-        for j in range(capacity, weight - 1, -1):
-            if dp[j] < dp[j - weight] + weight:
-                dp[j] = dp[j - weight] + weight
-                chosen[j] = chosen[j - weight] + [(weight, item_names[weight])]
-                
+    def find_max_weight(i, curr_capacity):
+        if i == 0 or curr_capacity == 0:
+            return 0
 
-    max_weight = dp[capacity]
-    chosen_items = chosen[capacity]
+        if (i, curr_capacity) in memo:
+            return memo[(i, curr_capacity)]
+
+        weight = items[i - 1]
+        if weight > curr_capacity:
+            result = find_max_weight(i - 1, curr_capacity)
+        else:
+            include_item = weight + find_max_weight(i - 1, curr_capacity - weight)
+            exclude_item = find_max_weight(i - 1, curr_capacity)
+            result = max(include_item, exclude_item)
+
+        memo[(i, curr_capacity)] = result
+        return result
+
+    max_weight = find_max_weight(n, capacity)
+
+    def find_chosen_items(i, curr_capacity):
+        if i <= 0 or curr_capacity <= 0:
+            return []
+
+        weight = items[i - 1]
+        if weight > curr_capacity:
+            return find_chosen_items(i - 1, curr_capacity)
+
+        include_item = weight + find_max_weight(i - 1, curr_capacity - weight)
+        exclude_item = find_max_weight(i - 1, curr_capacity)
+
+        if include_item > exclude_item:
+            chosen = find_chosen_items(i - 1, curr_capacity - weight)
+            chosen.append((weight, item_names[weight]))
+            return chosen
+        else:
+            return find_chosen_items(i - 1, curr_capacity)
+
+    chosen_items = find_chosen_items(n, capacity)
     return max_weight, chosen_items
 
 # Example usage
